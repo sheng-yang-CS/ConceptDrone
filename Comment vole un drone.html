@@ -1,0 +1,578 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Comment vole un drone</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout : une colonne de lecture sur fond de plan de travail quadrillé (comme en CAO) ;
+   trois couleurs portent le sens partout : information, énergie, force. */
+:root{
+  --bg:#F0F3F8; --grid:#E1E7F0; --surface:#FFFFFF; --ink:#15223A; --muted:#55627B; --line:#CCD5E2;
+  --signal:#0A7F7B; --power:#A86400; --force:#C92F68;
+  --signal-soft:#DDF1F0; --power-soft:#FBEBCF; --force-soft:#FBE1EA;
+  --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0E1524; --grid:#172036; --surface:#182239; --ink:#E9EEF8; --muted:#9BA8C2; --line:#2D3A59;
+  --signal:#45CFC7; --power:#F3B748; --force:#FF78A6;
+  --signal-soft:#123A3D; --power-soft:#3D2F12; --force-soft:#44172A; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0E1524; --grid:#172036; --surface:#182239; --ink:#E9EEF8; --muted:#9BA8C2; --line:#2D3A59;
+  --signal:#45CFC7; --power:#F3B748; --force:#FF78A6;
+  --signal-soft:#123A3D; --power-soft:#3D2F12; --force-soft:#44172A; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:20px;padding-block:0 72px}
+h1,h2,h3{font-family:var(--display);line-height:1.08;text-wrap:balance;margin:0}
+h1{font-size:clamp(2.5rem,7.5vw,4.6rem);font-weight:800;letter-spacing:-.025em}
+h2{font-size:clamp(1.7rem,4.2vw,2.5rem);font-weight:700;letter-spacing:-.015em}
+h3{font-size:1.2rem;font-weight:700}
+p{margin:0;max-width:66ch}
+.eyebrow{font-family:var(--mono);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.sig{color:var(--signal)} .pow{color:var(--power)} .frc{color:var(--force)}
+strong.sig,strong.pow,strong.frc{font-weight:700}
+a{color:var(--signal)}
+:focus-visible{outline:3px solid var(--signal);outline-offset:2px}
+
+nav.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  margin-inline:-20px;padding:10px 20px;display:flex;gap:6px;overflow-x:auto}
+nav.top a{flex:none;font-family:var(--mono);font-size:.78rem;text-decoration:none;color:var(--ink);padding:6px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+nav.top a:hover{border-color:var(--ink)}
+
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:32px;align-items:center;padding-block:48px 36px}
+.hero>*{min-width:0}
+.hero .lede{font-size:1.18rem;margin-top:18px}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px;padding:0;list-style:none}
+.legend li{display:flex;align-items:center;gap:8px;font-size:.92rem;padding:6px 12px;border-radius:999px;font-weight:700}
+.legend .l-sig{background:var(--signal-soft);color:var(--signal)}
+.legend .l-pow{background:var(--power-soft);color:var(--power)}
+.legend .l-frc{background:var(--force-soft);color:var(--force)}
+.legend span{font-weight:400;color:var(--ink)}
+svg{display:block;max-width:100%;height:auto}
+svg text{font-family:var(--mono);fill:var(--muted);font-size:12px}
+
+section{padding-block:44px;display:flex;flex-direction:column;gap:20px;scroll-margin-top:60px}
+section>header{display:flex;flex-direction:column;gap:10px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+.two>*{min-width:0}
+.stack{display:flex;flex-direction:column;gap:14px}
+
+/* chaîne */
+.chain{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px}
+.chain .arrow{align-self:center;font-family:var(--mono);font-weight:600}
+.node{font:inherit;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:12px 12px 10px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:112px;flex:1 1 112px;text-align:left}
+.node svg{width:30px;height:30px}
+.node b{font-family:var(--display);font-size:1rem;line-height:1.15}
+.node small{font-family:var(--mono);font-size:.68rem;color:var(--muted)}
+.node:hover{border-color:var(--ink)}
+.node[aria-pressed="true"]{border-color:var(--ink);box-shadow:4px 4px 0 var(--ink)}
+.batt-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:12px;padding-top:12px;border-top:2px dashed var(--power)}
+.batt-row .node{flex:0 1 190px}
+.batt-row p{font-size:.95rem;flex:1 1 220px}
+.detail{display:grid;grid-template-columns:1.4fr 1fr;gap:22px}
+.detail>*{min-width:0}
+.analogy{background:var(--signal-soft);border-radius:10px;padding:14px 16px;font-size:.97rem;align-self:start}
+.analogy b{display:block;font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--signal);margin-bottom:4px}
+
+/* mixeur */
+.stage{display:flex;justify-content:center;padding:8px 0;overflow:hidden}
+#droneTilt{width:min(340px,100%);transition:transform .35s ease}
+.presets{display:flex;flex-wrap:wrap;gap:8px}
+button.chip{font:inherit;font-size:.92rem;font-weight:700;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer}
+button.chip:hover{border-color:var(--ink)}
+button.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ctrl{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center}
+.ctrl label{font-weight:700;font-size:.95rem}
+.ctrl output{font-family:var(--mono);font-size:.85rem;font-variant-numeric:tabular-nums;color:var(--muted)}
+.ctrl input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--signal);margin:0}
+.ctrl small{grid-column:1/-1;color:var(--muted);font-size:.82rem}
+.result{border-left:4px solid var(--force);padding:4px 0 4px 14px;font-size:1rem}
+pre{margin:0;font-family:var(--mono);font-size:.84rem;line-height:1.7;overflow-x:auto;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;color:var(--ink)}
+pre .c{color:var(--muted)}
+
+/* boucle */
+.loop{display:flex;flex-wrap:wrap;gap:8px;align-items:center;list-style:none;padding:0;margin:0;font-size:.95rem}
+.loop li{background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:8px 12px}
+.loop li b{font-family:var(--display)}
+.loop .arrow{border:0;background:none;padding:0;font-family:var(--mono);color:var(--signal)}
+canvas{width:100%;height:320px;display:block;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+.switch{display:flex;align-items:center;gap:10px;font-weight:700}
+.switch input{width:20px;height:20px;accent-color:var(--signal)}
+.status{font-size:.98rem;min-height:3.2em;border-left:4px solid var(--signal);padding-left:14px}
+
+/* conception */
+.meter{position:relative;height:26px;background:var(--bg);border:1px solid var(--line);border-radius:6px;margin-block:26px 30px}
+.meter i{position:absolute;left:0;top:0;bottom:0;background:var(--force);border-radius:5px 0 0 5px;width:0;transition:width .2s}
+.meter s{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--ink);text-decoration:none}
+.meter s::after{content:attr(data-l);position:absolute;top:calc(100% + 2px);left:50%;transform:translateX(-50%);white-space:nowrap;font-family:var(--mono);font-size:.68rem;color:var(--muted)}
+.big{font-family:var(--display);font-size:2.6rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.points{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:22px 32px}
+.points li{min-width:0;display:flex;flex-direction:column;gap:5px;border-top:2px solid var(--ink);padding-top:10px}
+.points p{font-size:.98rem}
+.fig{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.fig figure{margin:0;min-width:0}
+.fig figcaption{font-size:.92rem;margin-top:8px}
+.fig figcaption b{font-family:var(--display)}
+
+.warn{background:var(--power-soft);border-radius:14px;padding:22px}
+.warn ul{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:66ch}
+.roles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.roles div{min-width:0;border-top:2px solid var(--ink);padding-top:10px;font-size:.95rem}
+.roles b{font-family:var(--display);display:block;font-size:1.05rem}
+ol.q{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;max-width:66ch}
+dl{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 32px;margin:0}
+dl div{min-width:0}
+dt{font-family:var(--mono);font-weight:600;font-size:.9rem;color:var(--signal)}
+dd{margin:0;font-size:.95rem}
+footer{color:var(--muted);font-size:.88rem;padding-top:28px;border-top:1px solid var(--line)}
+
+@media (max-width:760px){
+  body{font-size:16px}
+  .hero,.two,.detail,.points,.fig,dl{grid-template-columns:1fr}
+  .roles{grid-template-columns:1fr 1fr}
+  .hero{padding-block:32px 20px}
+  .panel{padding:16px}
+}
+</style>
+
+<div class="wrap">
+<nav class="top" aria-label="Chapitres">
+  <a href="#chaine">La chaîne</a><a href="#mouvements">Les mouvements</a><a href="#logiciel">Le logiciel</a><a href="#conception">La conception</a><a href="#securite">La sécurité</a><a href="#equipe">Ta place dans l'équipe</a><a href="#lexique">Lexique</a>
+</nav>
+
+<div class="hero">
+  <div>
+    <p class="eyebrow">Club robotique · projet drone</p>
+    <h1>Quatre hélices et un cerveau</h1>
+    <p class="lede">Un drone vole parce que ses hélices poussent de l'air vers le bas. Il reste stable parce qu'un petit ordinateur corrige la vitesse de chaque moteur des centaines de fois par seconde. Cette page te montre comment ces deux idées s'assemblent, de tes pouces jusqu'aux hélices.</p>
+    <ul class="legend" aria-label="Code couleur de la page">
+      <li class="l-sig">Information <span>les ordres et les mesures</span></li>
+      <li class="l-pow">Énergie <span>le courant de la batterie</span></li>
+      <li class="l-frc">Force <span>la poussée de l'air</span></li>
+    </ul>
+  </div>
+  <svg viewBox="0 0 420 290" role="img" aria-label="Drone vu de côté : deux flèches de poussée vers le haut au-dessus des hélices, une flèche de poids vers le bas au centre">
+    <g stroke="var(--force)" stroke-width="5" stroke-linecap="round" fill="none">
+      <line x1="90" y1="104" x2="90" y2="52"/><line x1="330" y1="104" x2="330" y2="52"/>
+    </g>
+    <polygon points="90,34 78,56 102,56" fill="var(--force)"/><polygon points="330,34 318,56 342,56" fill="var(--force)"/>
+    <text x="210" y="46" text-anchor="middle" style="fill:var(--force);font-weight:600">POUSSÉE</text>
+    <g stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 5" fill="none">
+      <line x1="62" y1="150" x2="62" y2="205"/><line x1="90" y1="158" x2="90" y2="215"/><line x1="118" y1="150" x2="118" y2="205"/>
+      <line x1="302" y1="150" x2="302" y2="205"/><line x1="330" y1="158" x2="330" y2="215"/><line x1="358" y1="150" x2="358" y2="205"/>
+    </g>
+    <text x="90" y="236" text-anchor="middle">air poussé</text><text x="330" y="236" text-anchor="middle">vers le bas</text>
+    <line x1="92" y1="140" x2="328" y2="140" stroke="var(--ink)" stroke-width="9" stroke-linecap="round"/>
+    <rect x="80" y="118" width="20" height="24" rx="3" fill="var(--ink)"/><rect x="320" y="118" width="20" height="24" rx="3" fill="var(--ink)"/>
+    <ellipse cx="90" cy="113" rx="64" ry="6" fill="var(--force)" opacity=".85"/><ellipse cx="330" cy="113" rx="64" ry="6" fill="var(--force)" opacity=".85"/>
+    <rect x="166" y="122" width="88" height="34" rx="8" fill="var(--surface)" stroke="var(--ink)" stroke-width="3"/>
+    <rect x="182" y="156" width="56" height="14" rx="3" fill="var(--power)"/>
+    <line x1="210" y1="176" x2="210" y2="246" stroke="var(--ink)" stroke-width="5" stroke-linecap="round"/>
+    <polygon points="210,266 198,244 222,244" fill="var(--ink)"/>
+    <text x="210" y="284" text-anchor="middle" style="fill:var(--ink);font-weight:600">POIDS</text>
+  </svg>
+</div>
+
+<section id="chaine">
+  <header>
+    <p class="eyebrow">Chapitre 1</p>
+    <h2>Du pouce à l'hélice : la chaîne complète</h2>
+    <p>Un ordre traverse six étapes avant de devenir un mouvement. Les premières étapes transportent de l'<strong class="sig">information</strong>, les dernières de l'<strong class="pow">énergie</strong>, et tout au bout sort une <strong class="frc">force</strong>. Clique sur chaque élément pour voir son rôle.</p>
+  </header>
+  <div class="panel">
+    <div class="chain" id="chain"></div>
+    <div class="batt-row" id="battRow">
+      <p><strong class="pow">La batterie alimente toute la chaîne.</strong> Beaucoup de courant part vers les moteurs, un tout petit peu vers l'électronique.</p>
+    </div>
+  </div>
+  <div class="panel detail" id="detail" aria-live="polite"></div>
+</section>
+
+<section id="mouvements">
+  <header>
+    <p class="eyebrow">Chapitre 2</p>
+    <h2>Quatre moteurs, et rien d'autre pour se diriger</h2>
+    <p>Un drone n'a ni gouvernail ni ailes. Pour monter, avancer ou tourner, il ne peut faire qu'une chose : changer la vitesse de chaque moteur. Deux hélices tournent dans un sens et deux dans l'autre, sinon le drone tournerait sur lui-même comme une toupie.</p>
+  </header>
+  <div class="panel two">
+    <div class="stack">
+      <div class="stage"><div id="droneTilt">
+        <svg viewBox="0 0 360 360" id="droneTop" role="img" aria-label="Drone vu de dessus avec ses quatre moteurs">
+          <text x="180" y="22" text-anchor="middle" style="fill:var(--ink);font-weight:600">▲ AVANT</text>
+          <g stroke="var(--ink)" stroke-width="12" stroke-linecap="round"><line x1="92" y1="100" x2="268" y2="276"/><line x1="268" y1="100" x2="92" y2="276"/></g>
+          <rect x="148" y="150" width="64" height="76" rx="12" fill="var(--surface)" stroke="var(--ink)" stroke-width="4"/>
+          <polygon points="180,160 168,180 192,180" fill="var(--signal)"/>
+          <g id="motors"></g>
+        </svg>
+      </div></div>
+      <p class="result" id="mixResult" aria-live="polite"></p>
+    </div>
+    <div class="stack">
+      <div class="presets" id="presets" role="group" aria-label="Mouvements à essayer"></div>
+      <div class="ctrl"><label for="mGaz">Gaz</label><output id="oGaz"></output><input type="range" id="mGaz" min="0" max="100" value="50"><small>La puissance moyenne des quatre moteurs.</small></div>
+      <div class="ctrl"><label for="mPitch">Tangage : reculer ↔ avancer</label><output id="oPitch"></output><input type="range" id="mPitch" min="-30" max="30" value="0"></div>
+      <div class="ctrl"><label for="mRoll">Roulis : gauche ↔ droite</label><output id="oRoll"></output><input type="range" id="mRoll" min="-30" max="30" value="0"></div>
+      <div class="ctrl"><label for="mYaw">Lacet : pivoter à gauche ↔ à droite</label><output id="oYaw"></output><input type="range" id="mYaw" min="-30" max="30" value="0"></div>
+    </div>
+  </div>
+  <div class="two">
+    <div class="stack">
+      <h3>Pourquoi pencher fait avancer</h3>
+      <p>Quand les moteurs arrière tournent plus vite que ceux de devant, l'arrière se soulève et le nez plonge. La poussée, qui était verticale, se retrouve inclinée : une partie continue à porter le drone, l'autre le pousse vers l'avant. C'est le même principe pour aller sur les côtés.</p>
+    </div>
+    <div class="stack">
+      <h3>Pourquoi le lacet est plus subtil</h3>
+      <p>Un moteur qui fait tourner son hélice dans un sens pousse le corps du drone dans l'autre sens : c'est le principe des actions réciproques que tu vois en physique. En accélérant les deux hélices qui tournent dans le même sens et en ralentissant les deux autres, le drone pivote sans monter ni descendre.</p>
+    </div>
+  </div>
+</section>
+
+<section id="logiciel">
+  <header>
+    <p class="eyebrow">Chapitre 3</p>
+    <h2>Le logiciel, entre ce que tu demandes et ce que font les moteurs</h2>
+    <p>Le pilote ne commande jamais directement un moteur. Il dit « penche de 10° vers l'avant », et c'est le logiciel du contrôleur de vol qui décide de la vitesse de chacun des quatre moteurs pour y arriver. Il fait deux choses en boucle.</p>
+  </header>
+
+  <div class="two">
+    <div class="stack">
+      <h3>1. Mesurer et corriger</h3>
+      <p>Un drone est instable par nature : la moindre différence entre deux moteurs le fait basculer. Le logiciel répète donc sans arrêt la même boucle.</p>
+      <ul class="loop">
+        <li><b>Mesurer</b> l'inclinaison réelle avec le gyroscope</li><li class="arrow" aria-hidden="true">→</li>
+        <li><b>Comparer</b> avec l'inclinaison demandée</li><li class="arrow" aria-hidden="true">→</li>
+        <li><b>Corriger</b> la vitesse des moteurs</li><li class="arrow" aria-hidden="true">↺</li>
+      </ul>
+      <p>La règle qui calcule la correction s'appelle un <strong>PID</strong>. Le <strong>P</strong> réagit à l'écart : plus le drone est loin de l'angle voulu, plus il corrige fort. Le <strong>D</strong> freine : il regarde à quelle vitesse le drone bascule et calme le mouvement avant de dépasser. Le <strong>I</strong> rattrape les petits défauts qui durent, comme une batterie mal centrée.</p>
+    </div>
+    <div class="stack">
+      <h3>2. Répartir sur les quatre moteurs</h3>
+      <p>Une fois la correction calculée, le logiciel la transforme en quatre vitesses. Cette étape s'appelle le <strong>mixage</strong>, et c'est exactement ce que tu as manipulé au chapitre précédent.</p>
+<pre><span class="c"># pour chaque moteur : on part des gaz, puis on ajoute ou on retire</span>
+avant_gauche   = gaz - avancer + droite - pivoter
+avant_droit    = gaz - avancer - droite + pivoter
+arriere_gauche = gaz + avancer + droite + pivoter
+arriere_droit  = gaz + avancer - droite - pivoter</pre>
+      <p>Les signes dépendent du sens de rotation de chaque hélice. Si une seule hélice est montée à l'envers, le drone se retourne au décollage.</p>
+    </div>
+  </div>
+
+  <div class="panel stack">
+    <h3>Essaie de régler la stabilisation</h3>
+    <p>Voici un drone vu de face. Change les réglages, puis envoie un coup de vent pour voir comment il réagit. Coupe le logiciel pour voir ce qui se passe sans lui.</p>
+    <div class="two">
+      <canvas id="sim" aria-label="Simulation : drone vu de face et courbe de son inclinaison dans le temps"></canvas>
+      <div class="stack">
+        <label class="switch"><input type="checkbox" id="sOn" checked> Logiciel de stabilisation activé</label>
+        <div class="ctrl"><label for="sTarget">Angle demandé par le pilote</label><output id="oTarget"></output><input type="range" id="sTarget" min="-30" max="30" value="0"></div>
+        <div class="ctrl"><label for="sP">P : réactivité</label><output id="oP"></output><input type="range" id="sP" min="0" max="80" value="30"></div>
+        <div class="ctrl"><label for="sD">D : amortissement</label><output id="oD"></output><input type="range" id="sD" min="0" max="20" step="0.5" value="8"></div>
+        <div class="presets">
+          <button class="chip" id="sGust" type="button">Coup de vent</button>
+          <button class="chip" id="sReset" type="button">Remettre à plat</button>
+        </div>
+        <p class="status" id="sStatus" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+  <p>Selon le matériel choisi par ton club, ce logiciel existe déjà (Betaflight ou ArduPilot sur une carte de vol du commerce) ou bien l'équipe l'écrit elle-même sur un microcontrôleur comme un Arduino ou un ESP32. Dans les deux cas il faudra régler ces fameux P, I et D sur le vrai drone.</p>
+</section>
+
+<section id="conception">
+  <header>
+    <p class="eyebrow">Chapitre 4</p>
+    <h2>Concevoir le châssis : ce qui compte vraiment</h2>
+    <p>Dans Onshape ou SolidWorks, vous allez dessiner le châssis qui porte tout le reste. Une belle forme ne suffit pas. Voici les questions que se pose un ingénieur avant de lancer l'impression.</p>
+  </header>
+
+  <div class="panel two">
+    <div class="stack">
+      <h3>Est-ce qu'il va décoller ?</h3>
+      <p>Additionne la masse de tout ce qui vole, puis compare avec la poussée maximale des quatre moteurs (elle est donnée dans la fiche technique du moteur, pour une hélice précise). Un drone agréable à piloter pousse au moins deux fois son poids.</p>
+      <div class="ctrl"><label for="cMass">Masse totale du drone</label><output id="oMass"></output><input type="range" id="cMass" min="50" max="1500" step="10" value="400"></div>
+      <div class="ctrl"><label for="cThrust">Poussée maximale d'un moteur</label><output id="oThrust"></output><input type="range" id="cThrust" min="20" max="1000" step="10" value="250"></div>
+    </div>
+    <div class="stack">
+      <p class="eyebrow">Rapport poussée / poids (valeurs d'exemple)</p>
+      <div class="big frc" id="cRatio"></div>
+      <div class="meter" aria-hidden="true"><i id="cBar"></i><s style="left:20%" data-l="1 : décolle"></s><s style="left:40%" data-l="2 : confortable"></s></div>
+      <p class="result" id="cVerdict" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <ul class="points">
+    <li><h3>Chaque gramme se paie</h3><p>Un gramme de plus demande plus de poussée, donc plus de courant, donc moins d'autonomie. Évide les pièces là où elles ne travaillent pas et pèse tout au fur et à mesure.</p></li>
+    <li><h3>Le centre de gravité au centre</h3><p>La batterie est souvent la pièce la plus lourde. Place-la au milieu des quatre moteurs, sinon deux d'entre eux devront forcer en permanence pour compenser.</p></li>
+    <li><h3>Des bras rigides</h3><p>Un bras qui vibre fait trembler le gyroscope, et le logiciel corrige alors des mouvements qui n'existent pas. Préfère des bras courts, épais en hauteur, avec des nervures.</p></li>
+    <li><h3>De la place pour les hélices</h3><p>Deux hélices voisines ne doivent jamais se toucher ni frôler le châssis. L'écart entre deux moteurs doit dépasser le diamètre d'une hélice, avec une marge.</p></li>
+    <li><h3>Les bons trous au bon endroit</h3><p>Relève dans les fiches techniques l'entraxe des vis des moteurs et de la carte de vol. Un trou imprimé sort souvent un peu plus petit que sur le plan : imprime une pièce d'essai avant le châssis complet.</p></li>
+    <li><h3>Penser au montage</h3><p>Prévois le passage des fils, une sangle pour changer la batterie facilement, et une protection pour l'électronique en cas de chute. Il y en aura.</p></li>
+  </ul>
+
+  <div class="panel stack">
+    <h3>Le sens d'impression change la solidité</h3>
+    <p>Une pièce imprimée en 3D est faite de couches empilées. Elle résiste bien quand on tire le long des couches, et casse facilement quand on cherche à les décoller.</p>
+    <div class="fig">
+      <figure>
+        <svg viewBox="0 0 300 120" role="img" aria-label="Bras imprimé à plat, couches dans le sens de la longueur">
+          <rect x="20" y="40" width="260" height="36" rx="4" fill="var(--signal-soft)" stroke="var(--signal)" stroke-width="2"/>
+          <g stroke="var(--signal)" stroke-width="1.5"><line x1="22" y1="49" x2="278" y2="49"/><line x1="22" y1="58" x2="278" y2="58"/><line x1="22" y1="67" x2="278" y2="67"/></g>
+          <circle cx="262" cy="34" r="9" fill="var(--ink)"/>
+          <line x1="262" y1="108" x2="262" y2="88" stroke="var(--force)" stroke-width="4"/><polygon points="262,78 255,90 269,90" fill="var(--force)"/>
+          <text x="20" y="104">couches le long du bras</text>
+        </svg>
+        <figcaption><b>Bras imprimé à plat.</b> Les couches courent sur toute la longueur. Le bras plie sans se fendre.</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 300 120" role="img" aria-label="Bras imprimé debout, couches en travers, fissure près du moteur">
+          <rect x="20" y="40" width="260" height="36" rx="4" fill="var(--force-soft)" stroke="var(--force)" stroke-width="2"/>
+          <g stroke="var(--force)" stroke-width="1.5"><line x1="50" y1="42" x2="50" y2="74"/><line x1="80" y1="42" x2="80" y2="74"/><line x1="110" y1="42" x2="110" y2="74"/><line x1="140" y1="42" x2="140" y2="74"/><line x1="170" y1="42" x2="170" y2="74"/><line x1="230" y1="42" x2="230" y2="74"/><line x1="255" y1="42" x2="255" y2="74"/></g>
+          <polyline points="200,36 196,50 204,60 198,80" fill="none" stroke="var(--ink)" stroke-width="3"/>
+          <circle cx="262" cy="34" r="9" fill="var(--ink)"/>
+          <line x1="262" y1="108" x2="262" y2="88" stroke="var(--force)" stroke-width="4"/><polygon points="262,78 255,90 269,90" fill="var(--force)"/>
+          <text x="20" y="104">couches en travers</text>
+        </svg>
+        <figcaption><b>Bras imprimé debout.</b> La poussée du moteur cherche à décoller les couches. Il casse au premier atterrissage raté.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section id="securite">
+  <header><p class="eyebrow">Chapitre 5</p><h2>Avant de brancher quoi que ce soit</h2></header>
+  <div class="warn">
+    <h3>Trois réflexes à prendre dès le premier jour</h3>
+    <ul>
+      <li><strong>Hélices démontées pendant les essais sur table.</strong> Un moteur peut démarrer à pleine vitesse à cause d'une simple erreur de réglage, et une hélice coupe.</li>
+      <li><strong>Respect pour la batterie LiPo.</strong> On ne la perce pas, on ne la court-circuite pas, on la charge avec un chargeur adapté et sous surveillance. Une batterie gonflée ne se réutilise pas.</li>
+      <li><strong>Vérifier la polarité deux fois.</strong> Un + et un − inversés détruisent une carte en une seconde.</li>
+    </ul>
+  </div>
+  <p>Pour voler dehors, il existe des règles qui dépendent surtout de la masse du drone (le seuil de 250 g est important) et du lieu. Demande à l'encadrant du club ce qui s'applique à votre projet. Les premiers vols se font de toute façon en intérieur, bas et doucement.</p>
+</section>
+
+<section id="equipe">
+  <header>
+    <p class="eyebrow">Chapitre 6</p>
+    <h2>Ta place dans l'équipe</h2>
+    <p>Personne ne maîtrise tout au départ, et un projet de drone a besoin de profils différents. Tu peux choisir un domaine et devenir la personne qui le connaît le mieux.</p>
+  </header>
+  <div class="roles">
+    <div><b>Conception</b>Dessiner le châssis en CAO, suivre la masse de chaque pièce, préparer les impressions.</div>
+    <div><b>Électronique</b>Choisir les composants, faire le schéma de câblage, souder proprement.</div>
+    <div><b>Programmation</b>Installer ou écrire le logiciel de vol, régler le PID, lire les capteurs.</div>
+    <div><b>Essais</b>Préparer les tests, noter ce qui se passe, trouver pourquoi ça ne marche pas.</div>
+  </div>
+  <div class="panel stack">
+    <h3>Cinq questions à poser à tes camarades</h3>
+    <p>Leurs réponses te diront où en est le projet, et montrent que tu as compris les enjeux.</p>
+    <ol class="q">
+      <li>Nos moteurs sont-ils brushless (trois fils) ou à balais (deux fils) ?</li>
+      <li>Quelle carte sert de contrôleur de vol, et quel logiciel tourne dessus ?</li>
+      <li>Quelle masse totale vise-t-on, et quelle poussée donnent nos moteurs ?</li>
+      <li>Quel diamètre d'hélices, et donc quelle distance entre les moteurs ?</li>
+      <li>Quelle batterie (combien de cellules, quelle capacité) et où la place-t-on ?</li>
+    </ol>
+  </div>
+</section>
+
+<section id="lexique">
+  <header><p class="eyebrow">Pour s'y retrouver</p><h2>Lexique</h2></header>
+  <dl>
+    <div><dt>Contrôleur de vol (FC)</dt><dd>La carte électronique qui contient les capteurs et fait tourner le logiciel de stabilisation.</dd></div>
+    <div><dt>IMU</dt><dd>Le capteur de mouvement : un gyroscope (vitesse de rotation) et un accéléromètre (accélérations et direction du bas).</dd></div>
+    <div><dt>ESC</dt><dd>Variateur électronique de vitesse. Il dose le courant envoyé à un moteur brushless.</dd></div>
+    <div><dt>Brushless</dt><dd>Moteur sans balais, à trois fils. Puissant et durable, il a besoin d'un ESC pour tourner.</dd></div>
+    <div><dt>KV</dt><dd>Nombre de tours par minute du moteur pour chaque volt, à vide. Petit drone : KV élevé et petites hélices.</dd></div>
+    <div><dt>LiPo, 1S, 2S, 3S…</dt><dd>Batterie lithium-polymère. Le chiffre devant le S compte les cellules en série, environ 3,7 V chacune.</dd></div>
+    <div><dt>PID</dt><dd>La formule de correction du logiciel : Proportionnel, Intégral, Dérivé.</dd></div>
+    <div><dt>Roulis, tangage, lacet</dt><dd>Les trois rotations du drone : pencher sur le côté, pencher vers l'avant ou l'arrière, pivoter à plat.</dd></div>
+    <div><dt>Firmware</dt><dd>Le logiciel installé dans une carte électronique.</dd></div>
+    <div><dt>CAO</dt><dd>Conception assistée par ordinateur : le dessin 3D des pièces, dans Onshape ou SolidWorks.</dd></div>
+  </dl>
+  <footer>Les simulations de cette page sont simplifiées pour montrer les idées. Les vraies valeurs se lisent dans les fiches techniques de vos composants.</footer>
+</section>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* ---------- Chapitre 1 : la chaîne ---------- */
+const I=p=>'<svg viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
+const parts=[
+ {id:'radio',n:'Radiocommande',t:'information',c:'sig',i:I('<rect x="4" y="12" width="22" height="13" rx="3"/><circle cx="10" cy="18.5" r="2.5"/><circle cx="20" cy="18.5" r="2.5"/><path d="M15 12V4"/>'),
+  d:'Tes pouces bougent deux manettes. La radiocommande transforme leur position en nombres et les envoie par ondes radio, le plus souvent en 2,4 GHz. Elle transmet quatre ordres : les gaz, le roulis, le tangage et le lacet.',a:'Ta voix quand tu donnes une consigne.'},
+ {id:'rx',n:'Récepteur',t:'information',c:'sig',i:I('<rect x="8" y="14" width="14" height="10" rx="2"/><path d="M15 14V9"/><path d="M10 7a7 7 0 0 1 10 0"/><path d="M7 4a11 11 0 0 1 16 0"/>'),
+  d:'Une toute petite carte avec une antenne, fixée sur le drone. Elle capte les ordres de la radiocommande et les passe au contrôleur de vol par un fil.',a:'L\'oreille qui entend la consigne.'},
+ {id:'fc',n:'Contrôleur de vol',t:'information',c:'sig',i:I('<rect x="8" y="8" width="14" height="14" rx="2"/><path d="M12 4v4M18 4v4M12 22v4M18 22v4M4 12h4M4 18h4M22 12h4M22 18h4"/>'),
+  d:'Le cœur du système. Cette carte contient un microcontrôleur et des capteurs (gyroscope et accéléromètre) qui sentent comment le drone bouge. Son logiciel compare ce que tu demandes avec ce que le drone fait vraiment, puis calcule une vitesse pour chaque moteur.',a:'Le cerveau, avec l\'oreille interne qui donne le sens de l\'équilibre.'},
+ {id:'esc',n:'Variateurs (ESC)',t:'information → énergie',c:'pow',i:I('<rect x="6" y="9" width="18" height="12" rx="2"/><path d="M2 15h4"/><path d="M24 11h4M24 15h4M24 19h4"/>'),
+  d:'Il y en a un par moteur. Le contrôleur lui envoie un signal minuscule, et l\'ESC laisse passer plus ou moins de courant de la batterie vers le moteur. C\'est ici que l\'information devient de la puissance. Si vos moteurs sont de petits moteurs à balais (deux fils), un simple transistor joue ce rôle.',a:'Un robinet commandé à distance, branché sur un gros tuyau.'},
+ {id:'mot',n:'Moteurs',t:'énergie',c:'pow',i:I('<circle cx="15" cy="15" r="10"/><circle cx="15" cy="15" r="3"/><path d="M15 5v4M15 21v4M5 15h4M21 15h4"/>'),
+  d:'Ils transforment l\'électricité en rotation. Les moteurs de drone tournent très vite, souvent plusieurs dizaines de milliers de tours par minute, et changent de vitesse en une fraction de seconde. C\'est cette rapidité qui permet au logiciel de rattraper l\'équilibre.',a:'Les muscles.'},
+ {id:'prop',n:'Hélices',t:'force',c:'frc',i:I('<ellipse cx="8.5" cy="15" rx="6.5" ry="2.6"/><ellipse cx="21.5" cy="15" rx="6.5" ry="2.6"/><circle cx="15" cy="15" r="1.5"/>'),
+  d:'Leurs pales inclinées poussent l\'air vers le bas. En retour, l\'air pousse le drone vers le haut : c\'est la poussée. Il existe des hélices pour tourner dans le sens des aiguilles d\'une montre et d\'autres pour le sens inverse. Elles ne sont pas interchangeables.',a:'Des mains qui appuient sur l\'air comme un nageur appuie sur l\'eau.'},
+ {id:'bat',n:'Batterie',t:'énergie',c:'pow',i:I('<rect x="4" y="10" width="20" height="12" rx="2"/><path d="M24 14v4h3v-4z"/><path d="M11 13v6M8 16h6"/>'),
+  d:'Une batterie LiPo, légère et capable de fournir beaucoup de courant d\'un coup. Elle alimente les moteurs à travers les ESC, et l\'électronique à travers un petit régulateur de tension. C\'est souvent la pièce la plus lourde du drone, ce qui compte beaucoup pour la conception.',a:'La réserve d\'énergie, comme un repas avant le sport.'}
+];
+const chain=$('chain'),battRow=$('battRow'),detail=$('detail');
+function show(id){
+  const p=parts.find(x=>x.id===id);
+  document.querySelectorAll('.node').forEach(b=>b.setAttribute('aria-pressed',b.dataset.id===id));
+  detail.innerHTML='<div class="stack"><p class="eyebrow '+p.c+'">'+p.t+'</p><h3>'+p.n+'</h3><p>'+p.d+'</p></div><div class="analogy"><b>Dans ton corps, ce serait</b>'+p.a+'</div>';
+}
+parts.forEach((p,k)=>{
+  const b=document.createElement('button');b.type='button';b.className='node';b.dataset.id=p.id;
+  b.innerHTML='<span class="'+p.c+'">'+p.i+'</span><b>'+p.n+'</b><small>'+p.t+'</small>';
+  b.addEventListener('click',()=>show(p.id));
+  if(p.id==='bat'){battRow.prepend(b);return}
+  chain.appendChild(b);
+  if(k<5){const a=document.createElement('span');a.className='arrow '+(k<3?'sig':k<4?'pow':'frc');a.setAttribute('aria-hidden','true');a.textContent='→';chain.appendChild(a)}
+});
+show('fc');
+
+/* ---------- Chapitre 2 : le mixeur ---------- */
+// sens : +1 horaire, -1 antihoraire. Les diagonales tournent dans le même sens.
+const M=[{k:'ag',x:92,y:100,dir:1,lab:'avant gauche'},{k:'ad',x:268,y:100,dir:-1,lab:'avant droit'},
+         {k:'rg',x:92,y:276,dir:-1,lab:'arrière gauche'},{k:'rd',x:268,y:276,dir:1,lab:'arrière droit'}];
+const NS='http://www.w3.org/2000/svg',mg=$('motors');
+const el=(n,a)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e};
+M.forEach(m=>{
+  m.disc=el('circle',{cx:m.x,cy:m.y,r:60,fill:'var(--force)'});
+  m.ring=el('circle',{cx:m.x,cy:m.y,r:60,fill:'none',stroke:'var(--force)','stroke-width':2});
+  m.blade=el('g',{});
+  m.blade.appendChild(el('ellipse',{cx:m.x,cy:m.y,rx:54,ry:7,fill:'var(--ink)'}));
+  const hub=el('circle',{cx:m.x,cy:m.y,r:9,fill:'var(--surface)',stroke:'var(--ink)','stroke-width':3});
+  m.txt=el('text',{x:m.x,y:m.y+(m.y<180?-68:80),'text-anchor':'middle'});m.txt.style.fill='var(--ink)';m.txt.style.fontWeight='600';
+  const sens=el('text',{x:m.x+(m.x<180?-58:58),y:m.y+4,'text-anchor':'middle'});sens.textContent=m.dir>0?'↻':'↺';sens.style.fontSize='22px';sens.style.fill='var(--force)';
+  [m.disc,m.ring,m.blade,hub,m.txt,sens].forEach(e=>mg.appendChild(e));
+  m.ang=m.dir>0?20:-20;m.sp=50;
+});
+const mix={g:$('mGaz'),p:$('mPitch'),r:$('mRoll'),y:$('mYaw')};
+const presets=[['Stationnaire',50,0,0,0],['Monter',75,0,0,0],['Avancer',55,22,0,0],['Aller à droite',55,0,22,0],['Pivoter',50,0,0,22]];
+const pb=$('presets');let yawAng=0;
+presets.forEach(p=>{const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=p[0];
+  b.addEventListener('click',()=>{mix.g.value=p[1];mix.p.value=p[2];mix.r.value=p[3];mix.y.value=p[4];if(p[0]==='Stationnaire')yawAng=0;updateMix()});pb.appendChild(b)});
+const sgn=v=>(v>0?'+':'')+v;
+function updateMix(){
+  const g=+mix.g.value,p=+mix.p.value,r=+mix.r.value,y=+mix.y.value;
+  const v={ag:g-p+r-y,ad:g-p-r+y,rg:g+p+r+y,rd:g+p-r-y};
+  M.forEach(m=>{m.sp=Math.max(0,Math.min(100,v[m.k]));m.disc.setAttribute('opacity',(0.06+m.sp/100*0.5).toFixed(2));m.txt.textContent=Math.round(m.sp)+' %'});
+  $('oGaz').textContent=g+' %';$('oPitch').textContent=sgn(p);$('oRoll').textContent=sgn(r);$('oYaw').textContent=sgn(y);
+  [...pb.children].forEach((b,i)=>{const q=presets[i];b.classList.toggle('on',q[1]===g&&q[2]===p&&q[3]===r&&q[4]===y)});
+  const s=[];
+  s.push(g>55?'Les quatre moteurs poussent plus fort que le poids : le drone <strong>monte</strong>.':g<45?'La poussée totale est plus faible que le poids : le drone <strong>descend</strong>.':'La poussée équilibre le poids : le drone <strong>garde sa hauteur</strong>.');
+  if(p)s.push(p>0?'Les moteurs arrière accélèrent, le nez plonge et le drone <strong>avance</strong>.':'Les moteurs avant accélèrent, le nez se lève et le drone <strong>recule</strong>.');
+  if(r)s.push(r>0?'Les moteurs de gauche accélèrent, le drone penche et <strong>glisse vers la droite</strong>.':'Les moteurs de droite accélèrent, le drone penche et <strong>glisse vers la gauche</strong>.');
+  if(y)s.push(y>0?'Les deux hélices antihoraires (↺) accélèrent : par réaction le drone <strong>pivote vers la droite</strong>.':'Les deux hélices horaires (↻) accélèrent : par réaction le drone <strong>pivote vers la gauche</strong>.');
+  $('mixResult').innerHTML=s.join(' ');
+  if(reduce)yawAng=y;
+  tilt();
+}
+function tilt(){
+  const g=+mix.g.value,p=+mix.p.value,r=+mix.r.value;
+  $('droneTilt').style.transform='perspective(650px) rotateZ('+yawAng.toFixed(1)+'deg) rotateX('+(p*0.8)+'deg) rotateY('+(r*0.8)+'deg) scale('+(0.88+g/100*0.2).toFixed(3)+')';
+}
+Object.values(mix).forEach(i=>i.addEventListener('input',updateMix));
+updateMix();
+M.forEach(m=>m.blade.setAttribute('transform','rotate('+m.ang+' '+m.x+' '+m.y+')'));
+
+/* ---------- Chapitre 3 : la stabilisation ---------- */
+const cv=$('sim'),ctx=cv.getContext('2d');
+const S={th:0,w:0,hist:[],crash:false};
+const sOn=$('sOn'),sT=$('sTarget'),sP=$('sP'),sD=$('sD');
+function fit(){const d=window.devicePixelRatio||1;cv.width=Math.max(200,cv.clientWidth)*d;cv.height=320*d;ctx.setTransform(d,0,0,d,0,0)}
+function statusText(){
+  const kp=+sP.value,kd=+sD.value;
+  $('oTarget').textContent=sgn(+sT.value)+'°';$('oP').textContent=kp;$('oD').textContent=kd;
+  let t;
+  if(S.crash)t='<strong>Le drone s\'est retourné.</strong> Clique sur « Remettre à plat » pour recommencer.';
+  else if(!sOn.checked)t='<strong>Sans logiciel, rien ne corrige.</strong> Le plus petit déséquilibre entre deux moteurs suffit à faire basculer le drone. Aucun pilote humain n\'est assez rapide pour compenser à la main.';
+  else if(kp<6)t='<strong>Trop peu de réactivité.</strong> Le drone revient vers l\'angle demandé, mais trop lentement pour résister au vent.';
+  else{const z=kd/(2*Math.sqrt(kp));
+    t=z<0.25?'<strong>Ça oscille.</strong> Le drone corrige fort mais rien ne le freine : il dépasse l\'angle voulu, revient, dépasse encore. Augmente le D.':
+      z<0.6?'<strong>Presque bon.</strong> Le drone dépasse un peu la consigne avant de se poser dessus.':
+      z<1.4?'<strong>Bien réglé.</strong> Le drone rejoint l\'angle demandé vite et sans rebond.':
+      '<strong>Trop amorti.</strong> Le drone est stable mais mou : il met longtemps à obéir. Baisse le D ou monte le P.'}
+  $('sStatus').innerHTML=t;
+}
+function step(dt){
+  if(S.crash)return;
+  const kp=+sP.value,kd=+sD.value,tg=+sT.value;
+  const a=sOn.checked?kp*(tg-S.th)-kd*S.w-0.3*S.w:14-0.2*S.w; // sans logiciel : petit déséquilibre permanent
+  S.w+=a*dt;S.th+=S.w*dt;
+  if(Math.abs(S.th)>85){S.th=85*Math.sign(S.th);S.w=0;S.crash=true;statusText()}
+}
+function draw(){
+  const W=cv.clientWidth,H=320,ink=css('--ink'),mut=css('--muted'),sig=css('--signal'),frc=css('--force'),line=css('--line'),pow=css('--power');
+  ctx.clearRect(0,0,W,H);
+  const cx=W/2,cy=86,tg=+sT.value,rad=Math.PI/180;
+  ctx.strokeStyle=line;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(16,cy);ctx.lineTo(W-16,cy);ctx.stroke();
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(tg*rad);ctx.setLineDash([6,6]);ctx.strokeStyle=sig;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-100,0);ctx.lineTo(100,0);ctx.stroke();ctx.restore();
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(S.th*rad);
+  ctx.strokeStyle=ink;ctx.lineWidth=7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-78,0);ctx.lineTo(78,0);ctx.stroke();
+  ctx.fillStyle=ink;ctx.fillRect(-86,-16,14,18);ctx.fillRect(72,-16,14,18);
+  ctx.fillStyle=frc;ctx.beginPath();ctx.ellipse(-79,-20,38,4,0,0,7);ctx.fill();ctx.beginPath();ctx.ellipse(79,-20,38,4,0,0,7);ctx.fill();
+  ctx.fillStyle=css('--surface');ctx.strokeStyle=ink;ctx.lineWidth=3;ctx.beginPath();ctx.rect(-26,-14,52,24);ctx.fill();ctx.stroke();
+  ctx.fillStyle=pow;ctx.fillRect(-18,11,36,9);
+  ctx.restore();
+  // courbe
+  const gy=170,gh=130,mid=gy+gh/2,sc=gh/2/60;
+  ctx.strokeStyle=line;ctx.lineWidth=1;ctx.setLineDash([]);ctx.strokeRect(16,gy,W-32,gh);
+  ctx.beginPath();ctx.moveTo(16,mid);ctx.lineTo(W-16,mid);ctx.stroke();
+  ctx.font='11px '+css('--mono');ctx.fillStyle=mut;ctx.textAlign='left';
+  ctx.fillText('+60°',20,gy+12);ctx.fillText('−60°',20,gy+gh-5);ctx.fillText('inclinaison au fil du temps',20,gy-6);
+  const n=S.hist.length,dx=(W-32)/359;
+  const plot=(key,col,dash)=>{ctx.beginPath();ctx.setLineDash(dash);ctx.strokeStyle=col;ctx.lineWidth=2.2;
+    S.hist.forEach((h,i)=>{const x=16+(360-n+i)*dx,y=mid+Math.max(-60,Math.min(60,h[key]))*sc;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.setLineDash([])};
+  plot(1,sig,[6,6]);plot(0,frc,[]);
+  ctx.textAlign='right';ctx.fillStyle=sig;ctx.fillText('demandé',W-22,gy+12);ctx.fillStyle=frc;ctx.fillText('réel',W-22,gy+26);
+}
+$('sGust').addEventListener('click',()=>{if(!S.crash)S.w+=(Math.random()<.5?-1:1)*130});
+$('sReset').addEventListener('click',()=>{S.th=0;S.w=0;S.crash=false;statusText()});
+[sOn,sT,sP,sD].forEach(i=>i.addEventListener('input',statusText));
+window.addEventListener('resize',fit);
+fit();statusText();
+
+/* ---------- Chapitre 4 : poussée / poids ---------- */
+const cM=$('cMass'),cT=$('cThrust');
+function calc(){
+  const m=+cM.value,t=+cT.value,r=4*t/m;
+  $('oMass').textContent=m+' g';$('oThrust').textContent=t+' g';
+  $('cRatio').textContent=r.toFixed(1).replace('.',',')+' : 1';
+  $('cBar').style.width=Math.min(100,r/5*100)+'%';
+  const gaz=Math.round(100/r);
+  $('cVerdict').innerHTML=r<1?'<strong>Il ne décolle pas.</strong> Même à fond, les moteurs poussent moins fort que le poids. Il faut alléger ou changer de moteurs ou d\'hélices.':
+    r<1.5?'<strong>Il décolle à peine.</strong> Il faudrait environ '+gaz+' % des gaz rien que pour tenir en l\'air, et il ne reste presque rien pour corriger l\'équilibre.':
+    r<2?'<strong>Il vole, sans marge.</strong> Comptez environ '+gaz+' % des gaz en stationnaire. Quelques grammes en moins feraient du bien.':
+    r<4?'<strong>Bon équilibre.</strong> Le drone tient en l\'air vers '+gaz+' % des gaz et garde de la réserve pour manœuvrer et résister au vent.':
+    '<strong>Très nerveux.</strong> C\'est le domaine des drones de course. Pour un premier drone, il sera délicat à piloter.';
+}
+cM.addEventListener('input',calc);cT.addEventListener('input',calc);calc();
+
+/* ---------- boucle d'animation ---------- */
+let last=0;
+function frame(ts){
+  const dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
+  if(!reduce){
+    M.forEach(m=>{m.ang=(m.ang+m.dir*m.sp*9*dt)%360;m.blade.setAttribute('transform','rotate('+m.ang.toFixed(1)+' '+m.x+' '+m.y+')')});
+    const y=+mix.y.value;if(y){yawAng+=y*1.6*dt;tilt()}
+  }
+  for(let i=0;i<4;i++)step(dt/4);
+  S.hist.push([S.th,+sT.value]);if(S.hist.length>360)S.hist.shift();
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
